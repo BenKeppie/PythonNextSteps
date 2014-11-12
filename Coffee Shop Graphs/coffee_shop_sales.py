@@ -5,11 +5,13 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 
+
+#Controller
 class CoffeeShopController:
     def __init__(self,path):
         self.path = path
 
-    def query(self,sql,parameters=None):
+    def query(self,sql,parameters=None): #constantly repeating  queries
         with sqlite3.connect(self.path) as self.db:
             cursor = self.db.cursor()
             cursor.execute("PRAGMA foreign_keys = ON")
@@ -20,7 +22,7 @@ class CoffeeShopController:
             results = cursor.fetchall()
             return results
 
-    def product_totals(self,date):
+    def product_totals(self,date): #method to return daily totals
         sql = """SELECT product.name, sum(product.price) as total
                 FROM product, order_items, customer_order
                 WHERE order_items.order_id = customer_order.order_id and 
@@ -29,35 +31,36 @@ class CoffeeShopController:
                 GROUP BY product.name"""
         return self.query(sql,[date])
 
+#GraphWidget
 class CoffeeCanvas(FigureCanvas):
     def __init__(self):
-        self.fig = Figure()
-        self.ax = self.fig.add_subplot(1,1,1)
+        self.fig = Figure() # Creates page
+        self.ax = self.fig.add_subplot(1,1,1) #Creates axis (rows/columns)
         super().__init__(self.fig)
-        self.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
-        self.fig.canvas.draw()
+        self.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding) #Expand widget correctly
+        self.fig.canvas.draw() #draws the code
 
     def show_bar_graph(self,data,date):
-        self.ax.clear()
+        self.ax.clear() #clears previous plot
         data_dict = dict(data)
         for i, key in enumerate(data_dict):
-            self.ax.bar(i,data_dict[key])
-        self.ax.set_xticks(np.arange(len(data_dict))+0.4)
-        self.ax.set_xticklabels(list(data_dict.keys()))
-        self.fig.autofmt_xdate()
+            self.ax.bar(i,data_dict[key]) #Convert data to a dictionary
+        self.ax.set_xticks(np.arange(len(data_dict))+0.4) #positioning for each tick on x-axis
+        self.ax.set_xticklabels(list(data_dict.keys())) #Sets labels
+        self.fig.autofmt_xdate() #formats labels so they don't overlap
         self.ax.set_title("Total Sales for {0}".format(date))
         self.ax.set_xlabel("Product")
         self.ax.set_ylabel("Amount (£)")
-        self.fig.canvas.draw()
+        self.fig.canvas.draw() #redraws widgets
 
     def show_pie_chart(self,data,date):
         self.ax.clear()
         data_dict = dict(data)
         data = list(data_dict.values())
-        labels = list(data_dict.keys())
-        self.ax.pie(data,labels=labels,autopct='%1.1f%%')
-        self.ax.set_title("Percentage Sales for {0}".format(date))
-        self.fig.canvas.draw()
+        labels = list(data_dict.keys()) #generate lists for dictionaries 
+        self.ax.pie(data,labels=labels,autopct='%1.1f%%')#creates pie chart
+        self.ax.set_title("Percentage Sales for {0}".format(date))#title
+        self.fig.canvas.draw() #draws
 
 class CoffeeShopWindow(QMainWindow):
     def __init__(self):
@@ -106,9 +109,9 @@ class CoffeeShopWindow(QMainWindow):
         self.graph_data()
 
     def graph_data(self):
-        totals = self.coffee_controller.product_totals("2013-05-27")
+        totals = self.coffee_controller.product_totals("2013-05-27")#instantiates CoffeeShopController
         self.pie_canvas.show_pie_chart(totals,"2012-05-27")
-        self.bar_canvas.show_bar_graph(totals,"2012-05-27")
+        self.bar_canvas.show_bar_graph(totals,"2012-05-27") #produces graph
 
 
 if __name__ == "__main__":
